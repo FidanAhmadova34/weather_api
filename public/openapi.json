@@ -1,0 +1,52 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Weather API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "/api" }
+  ],
+  "paths": {
+    "/weather/current": {
+      "get": {
+        "summary": "Get current weather",
+        "parameters": [
+          {"in":"query","name":"city","schema":{"type":"string"}},
+          {"in":"query","name":"country","schema":{"type":"string"}},
+          {"in":"query","name":"id","schema":{"type":"integer"}},
+          {"in":"query","name":"lat","schema":{"type":"number","format":"float"}},
+          {"in":"query","name":"lon","schema":{"type":"number","format":"float"}}
+        ],
+        "responses": {"200":{"description":"OK"}}
+      }
+    },
+    "/weather/forecast": {
+      "get": {
+        "summary": "Get forecast",
+        "parameters": [
+          {"in":"query","name":"city","schema":{"type":"string"}},
+          {"in":"query","name":"country","schema":{"type":"string"}},
+          {"in":"query","name":"id","schema":{"type":"integer"}},
+          {"in":"query","name":"lat","schema":{"type":"number","format":"float"}},
+          {"in":"query","name":"lon","schema":{"type":"number","format":"float"}},
+          {"in":"query","name":"days","schema":{"type":"integer","minimum":1,"maximum":5}}
+        ],
+        "responses": {"200":{"description":"OK"}}
+      }
+    },
+    "/weather/search": {
+      "get": {
+        "summary": "Search cities",
+        "parameters": [
+          {"in":"query","name":"q","required":true,"schema":{"type":"string","minLength":3}},
+          {"in":"query","name":"country","schema":{"type":"string"}}
+        ],
+        "responses": {"200":{"description":"OK"}}
+      }
+    },
+    "/health": {"get": {"summary": "Health check", "responses": {"200":{"description":"OK"}}}}
+  }
+}
+
+
