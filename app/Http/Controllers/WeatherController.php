@@ -334,4 +334,88 @@ class WeatherController extends Controller
             'params' => $params,
         ]);
     }
+
+    private function respondError(string $message, int $status, string $cid)
+    {
+        return response()->json([
+            'error' => [
+                'code' => $status,
+                'message' => $message,
+                'cid' => $cid,
+            ]
+        ], $status)->header('X-Correlation-ID', $cid);
+    }
+
+    private function toCurrentDto(array $p): array
+    {
+        return [
+            'name' => $p['name'] ?? null,
+            'country' => $p['sys']['country'] ?? null,
+            'lat' => $p['coord']['lat'] ?? null,
+            'lon' => $p['coord']['lon'] ?? null,
+            'tempC' => $p['main']['temp'] ?? null,
+            'humidity' => $p['main']['humidity'] ?? null,
+            'windMs' => $p['wind']['speed'] ?? null,
+            'condition' => $p['weather'][0]['description'] ?? null,
+            'icon' => $p['weather'][0]['icon'] ?? null,
+        ];
+    }
+
+    private function toForecastDto(array $p, int $days): array
+    {
+        $items = [];
+        $seen = [];
+        foreach (($p['list'] ?? []) as $it) {
+            $date = isset($it['dt_txt']) ? explode(' ', $it['dt_txt'])[0] : null;
+            if ($date && !in_array($date, $seen, true)) {
+                $seen[] = $date;
+                $items[] = [
+                    'date' => $date,
+                    'tempC' => $it['main']['temp'] ?? null,
+                    'condition' => $it['weather'][0]['description'] ?? null,
+                    'icon' => $it['weather'][0]['icon'] ?? null,
+                ];
+                if (count($seen) >= $days) break;
+            }
+        }
+        return [
+            'city' => [
+                'name' => $p['city']['name'] ?? null,
+                'country' => $p['city']['country'] ?? null,
+                'lat' => $p['city']['coord']['lat'] ?? null,
+                'lon' => $p['city']['coord']['lon'] ?? null,
+            ],
+            'days' => $items,
+        ];
+    }
+
+    // v1 endpoints (DTO responses)
+    public function currentV1(Request $request)
+    {
+        $res = $this->current($request);
+        $cid = $res->headers->get('X-Correlation-ID') ?? (string) Str::uuid();
+        if ($res->status() !== 200) {
+            return $this->respondError('Unable to fetch weather data', $res->status(), $cid);
+        }
+        $payload = $res->getData(true);
+        return response()->json($this->toCurrentDto($payload), 200)->header('X-Correlation-ID', $cid);
+    }
+
+    public function forecastV1(Request $request)
+    {
+        $res = $this->forecast($request);
+        $cid = $res->headers->get('X-Correlation-ID') ?? (string) Str::uuid();
+        if ($res->status() !== 200) {
+            return $this->respondError('Unable to fetch forecast data', $res->status(), $cid);
+        }
+        $days = (int) ($request->days ?? 3);
+        $payload = $res->getData(true);
+        return response()->json($this->toForecastDto($payload, $days), 200)->header('X-Correlation-ID', $cid);
+    }
+    public function history()
+{
+    $this->authorize('view-history'); // double-check
+    return response()->json(['data' => 'Historical weather data']);
+}
+
 }
